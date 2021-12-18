@@ -1,12 +1,22 @@
 package com.udacity.project4.locationreminders.reminderslist
 
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.*
+import androidx.activity.viewModels
+import androidx.core.content.ContextCompat.startActivity
 import androidx.databinding.DataBindingUtil
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
+import com.firebase.ui.auth.AuthUI
 import com.udacity.project4.R
+import com.udacity.project4.authentication.AuthenticationActivity
+import com.udacity.project4.authentication.AuthenticationViewModel
 import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentRemindersBinding
+import com.udacity.project4.locationreminders.RemindersActivity
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import com.udacity.project4.utils.setTitle
 import com.udacity.project4.utils.setup
@@ -16,6 +26,7 @@ class ReminderListFragment : BaseFragment() {
     //use Koin to retrieve the ViewModel instance
     override val _viewModel: RemindersListViewModel by viewModel()
     private lateinit var binding: FragmentRemindersBinding
+    private val authViewModel by viewModels<AuthenticationViewModel>()
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -30,8 +41,8 @@ class ReminderListFragment : BaseFragment() {
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(false)
         setTitle(getString(R.string.app_name))
-
         binding.refreshLayout.setOnRefreshListener { _viewModel.loadReminders() }
+        observeAuthenticationState()
 
         return binding.root
     }
@@ -71,7 +82,14 @@ class ReminderListFragment : BaseFragment() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.logout -> {
-//                TODO: add the logout implementation
+                AuthUI.getInstance()
+                    .signOut(requireContext())
+                    .addOnCompleteListener {
+                        // ...
+                    }
+                Log.d("ReminderListFragment", "log-out successful")
+                launchAuthenticationActivity()
+
             }
         }
         return super.onOptionsItemSelected(item)
@@ -84,4 +102,23 @@ class ReminderListFragment : BaseFragment() {
         inflater.inflate(R.menu.main_menu, menu)
     }
 
+    private fun launchAuthenticationActivity(){
+        val intent = Intent(requireActivity(), AuthenticationActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or  Intent.FLAG_ACTIVITY_NEW_TASK
+        startActivity(intent)
+    }
+
+    private fun observeAuthenticationState() {
+
+        authViewModel.authenticationState.observe(viewLifecycleOwner, Observer { authenticationState ->
+            if (authenticationState !=  AuthenticationViewModel.AuthenticationState.AUTHENTICATED) {
+                Log.i("ReminderListFragment", "Authentication missing, moving to authentication view")
+                launchAuthenticationActivity()
+            }
+            else {
+                Log.i("ReminderListFragment", "Authentication already done, skipping login ...")
+            }
+
+        })
+    }
 }
