@@ -2,6 +2,7 @@ package com.udacity.project4.locationreminders.savereminder.selectreminderlocati
 
 
 import android.annotation.SuppressLint
+import android.content.res.Resources
 import android.location.Location
 import android.os.Bundle
 import android.util.Log
@@ -14,25 +15,29 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.PointOfInterest
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
+import com.udacity.project4.base.NavigationCommand
 import com.udacity.project4.databinding.FragmentSelectLocationBinding
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
 
 private const val DEFAULT_ZOOM = 15f
+
 // SIDNEY
 private val DEFAULT_LOCATION = LatLng(-34.0, 151.0)
 
 class SelectLocationFragment : BaseFragment() {
 
-
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private lateinit var map: GoogleMap
     private var lastKnownLocation: Location? = null
-
+    private var selectedLocation: LatLng? = null
+    private var selectedPoi: PointOfInterest? = null
 
     //Use Koin to get the view model of the SaveReminder
     override val _viewModel: SaveReminderViewModel by inject()
@@ -49,7 +54,8 @@ class SelectLocationFragment : BaseFragment() {
 
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(true)
-        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireActivity())
+        fusedLocationProviderClient =
+            LocationServices.getFusedLocationProviderClient(requireActivity())
 
 //        TODO: add the map setup implementation
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
@@ -62,8 +68,9 @@ class SelectLocationFragment : BaseFragment() {
 
 
 //        TODO: call this function after the user confirms on the selected location
-        onLocationSelected()
-
+        binding.buttonSaveLocation.setOnClickListener {
+            onLocationSelected()
+        }
         return binding.root
     }
 
@@ -71,11 +78,18 @@ class SelectLocationFragment : BaseFragment() {
         //        TODO: When the user confirms on the selected location,
         //         send back the selected location details to the view model
         //         and navigate back to the previous fragment to save the reminder and add the geofence
+        _viewModel.selectedPOI.value = selectedPoi
+        _viewModel.latitude.value = selectedLocation?.latitude
+        _viewModel.longitude.value = selectedLocation?.longitude
+        _viewModel.reminderSelectedLocationStr.value = selectedPoi?.name
+        Log.i("TAG", "POI/location saved")
+        _viewModel.navigationCommand.value = NavigationCommand.Back
     }
 
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.map_options, menu)
+
     }
 
     override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
@@ -112,7 +126,10 @@ class SelectLocationFragment : BaseFragment() {
          */
         Log.i("OnMapReadyCallback", "Map is available")
         map = googleMap
+        setMapStyle(map)
         map.isMyLocationEnabled = true
+        setMapLongClick(map)
+        setPoiClick(map)
         getDeviceLocation()
     }
 
@@ -129,16 +146,22 @@ class SelectLocationFragment : BaseFragment() {
                     // Set the map's camera position to the current location of the device.
                     lastKnownLocation = task.result
                     if (lastKnownLocation != null) {
-                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(
-                            LatLng(
-                                lastKnownLocation!!.latitude,
-                                lastKnownLocation!!.longitude), DEFAULT_ZOOM.toFloat()))
+                        map.moveCamera(
+                            CameraUpdateFactory.newLatLngZoom(
+                                LatLng(
+                                    lastKnownLocation!!.latitude,
+                                    lastKnownLocation!!.longitude
+                                ), DEFAULT_ZOOM.toFloat()
+                            )
+                        )
                     }
                 } else {
                     Log.d("TAG", "Current location is null. Using defaults.")
                     Log.e("TAG", "Exception: %s", task.exception)
-                    map.moveCamera(CameraUpdateFactory
-                        .newLatLngZoom(DEFAULT_LOCATION, DEFAULT_ZOOM.toFloat()))
+                    map.moveCamera(
+                        CameraUpdateFactory
+                            .newLatLngZoom(DEFAULT_LOCATION, DEFAULT_ZOOM.toFloat())
+                    )
                     map.uiSettings.isMyLocationButtonEnabled = false
                 }
             }
@@ -146,4 +169,53 @@ class SelectLocationFragment : BaseFragment() {
             Log.e("Exception: %s", e.message, e)
         }
     }
+
+    private fun setPoiClick(map: GoogleMap) {
+        map.setOnPoiClickListener { poi ->
+            selectedLocation = poi.latLng
+            selectedPoi = poi
+            map.clear()
+            val poiMarker = map.addMarker(
+                MarkerOptions()
+                    .position(selectedLocation!!)
+                    .title(poi.name)
+            )
+            poiMarker.showInfoWindow()
+            Log.i("TAG", "Marker added at poi: $poi")
+
+        }
+    }
+
+    private fun setMapLongClick(map: GoogleMap) {
+        map.setOnMapLongClickListener { latLng ->
+            selectedLocation = latLng
+            selectedPoi = null
+            map.clear()
+            map.addMarker(
+                MarkerOptions()
+                    .position(selectedLocation!!)
+            )
+            Log.i("TAG", "Marker added at location: $latLng")
+        }
+    }
+
+    private fun setMapStyle(map: GoogleMap) {
+        try {
+            // Customize the styling of the base map using a JSON object defined
+            // in a raw resource file.
+            val success = map.setMapStyle(
+                MapStyleOptions.loadRawResourceStyle(
+                    requireContext(),
+                    R.raw.map_style
+                )
+            )
+
+            if (!success) {
+                Log.e("TAG", "Style parsing failed.")
+            }
+        } catch (e: Resources.NotFoundException) {
+            Log.e("TAG", "Can't find style. Error: ", e)
+        }
+    }
+
 }
