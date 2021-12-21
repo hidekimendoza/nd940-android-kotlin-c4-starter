@@ -1,10 +1,14 @@
 package com.udacity.project4.locationreminders.savereminder.selectreminderlocation
 
 
+import android.annotation.SuppressLint
+import android.location.Location
 import android.os.Bundle
 import android.util.Log
 import android.view.*
 import androidx.databinding.DataBindingUtil
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -18,9 +22,17 @@ import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
 
+private const val DEFAULT_ZOOM = 15f
+// SIDNEY
+private val DEFAULT_LOCATION = LatLng(-34.0, 151.0)
+
 class SelectLocationFragment : BaseFragment() {
 
+
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private lateinit var map: GoogleMap
+    private var lastKnownLocation: Location? = null
+
 
     //Use Koin to get the view model of the SaveReminder
     override val _viewModel: SaveReminderViewModel by inject()
@@ -37,6 +49,7 @@ class SelectLocationFragment : BaseFragment() {
 
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(true)
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
 //        TODO: add the map setup implementation
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
@@ -86,6 +99,7 @@ class SelectLocationFragment : BaseFragment() {
         else -> super.onOptionsItemSelected(item)
     }
 
+    @SuppressLint("MissingPermission")
     private val callback = OnMapReadyCallback { googleMap ->
         /**
          * Manipulates the map once available.
@@ -98,8 +112,38 @@ class SelectLocationFragment : BaseFragment() {
          */
         Log.i("OnMapReadyCallback", "Map is available")
         map = googleMap
-        val sydney = LatLng(-34.0, 151.0)
-        map.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
-        map.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+        map.isMyLocationEnabled = true
+        getDeviceLocation()
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun getDeviceLocation() {
+        /*
+         * Get the best and most recent location of the device, which may be null in rare
+         * cases when a location is not available.
+         */
+        try {
+            val locationResult = fusedLocationProviderClient.lastLocation
+            locationResult.addOnCompleteListener(requireActivity()) { task ->
+                if (task.isSuccessful) {
+                    // Set the map's camera position to the current location of the device.
+                    lastKnownLocation = task.result
+                    if (lastKnownLocation != null) {
+                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(
+                            LatLng(
+                                lastKnownLocation!!.latitude,
+                                lastKnownLocation!!.longitude), DEFAULT_ZOOM.toFloat()))
+                    }
+                } else {
+                    Log.d("TAG", "Current location is null. Using defaults.")
+                    Log.e("TAG", "Exception: %s", task.exception)
+                    map.moveCamera(CameraUpdateFactory
+                        .newLatLngZoom(DEFAULT_LOCATION, DEFAULT_ZOOM.toFloat()))
+                    map.uiSettings.isMyLocationButtonEnabled = false
+                }
+            }
+        } catch (e: SecurityException) {
+            Log.e("Exception: %s", e.message, e)
+        }
     }
 }
