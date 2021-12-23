@@ -3,6 +3,7 @@ package com.udacity.project4.locationreminders.geofence
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import com.udacity.project4.locationreminders.savereminder.SaveReminderFragment
 
 /**
@@ -17,6 +18,7 @@ import com.udacity.project4.locationreminders.savereminder.SaveReminderFragment
 
 class GeofenceBroadcastReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        Log.i("GeofenceBroadcastRecv", "Broadcast received")
         if (intent.action == SaveReminderFragment.ACTION_GEOFENCE_EVENT) {
             GeofenceTransitionsJobIntentService.enqueueWork(context, intent)
         }

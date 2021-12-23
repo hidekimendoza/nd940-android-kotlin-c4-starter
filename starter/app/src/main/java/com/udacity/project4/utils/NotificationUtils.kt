@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.TaskStackBuilder
 import com.udacity.project4.BuildConfig
@@ -15,6 +16,10 @@ import com.udacity.project4.locationreminders.reminderslist.ReminderDataItem
 private const val NOTIFICATION_CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel"
 
 fun sendNotification(context: Context, reminderDataItem: ReminderDataItem) {
+    Log.i(
+        "sendNotification",
+        "Creating notification for reminder with title ${reminderDataItem.location}"
+    )
     val notificationManager = context
         .getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 

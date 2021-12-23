@@ -1,5 +1,6 @@
 package com.udacity.project4.locationreminders.savereminder
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Bundle
@@ -22,7 +23,6 @@ import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
 
 private const val GEOFENCE_RADIUS_METERS = 150f
-private const val LOCATION_PERMISSION_INDEX = 0
 
 
 class SaveReminderFragment : BaseFragment() {
@@ -31,9 +31,12 @@ class SaveReminderFragment : BaseFragment() {
     private lateinit var binding: FragmentSaveReminderBinding
     private lateinit var geofencingClient: GeofencingClient
 
+    // A PendingIntent for the Broadcast Receiver that handles geofence transitions.
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent(requireContext(), GeofenceBroadcastReceiver::class.java)
         intent.action = ACTION_GEOFENCE_EVENT
+        // Use FLAG_UPDATE_CURRENT so that you get the same pending intent back when calling
+        // addGeofences() and removeGeofences().
         PendingIntent.getBroadcast(requireContext(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
@@ -72,7 +75,7 @@ class SaveReminderFragment : BaseFragment() {
 //             2) save the reminder to the local db
 
             _viewModel.validateAndSaveReminder(reminderData)
-            addReminderGeofence()
+            addReminderGeofence(reminderData.id)
 
         }
     }
@@ -83,7 +86,8 @@ class SaveReminderFragment : BaseFragment() {
         _viewModel.onClear()
     }
 
-    private fun addReminderGeofence() {
+    @SuppressLint("MissingPermission")
+    private fun addReminderGeofence(reminderId: String) {
         if (_viewModel.latitude.value == null || _viewModel.longitude.value == null || _viewModel.reminderTitle == null) {
             Log.d("Geofence", "invalid latitude, longitude or title unable to create geofence")
             return
@@ -93,7 +97,7 @@ class SaveReminderFragment : BaseFragment() {
         val geofence = Geofence.Builder()
             // Set the request ID of the geofence. This is a string to identify this
             // geofence.
-            .setRequestId(_viewModel.reminderTitle.value)
+            .setRequestId(reminderId)
 
             // Set the circular region of this geofence.
             .setCircularRegion(
@@ -118,15 +122,19 @@ class SaveReminderFragment : BaseFragment() {
             .addGeofence(geofence)
             .build()
 
+        Log.i("AddGeofences", "Adding geofence with id: $reminderId")
 
         geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent)?.run {
             addOnSuccessListener {
+                Log.i("AddGeofences", "Geofences addedOn succeeded")
 
                 // Geofences added
                 // ...
             }
             addOnFailureListener {
                 // Failed to add geofences
+                Log.i("AddGeofences", "Geofences addedOn Failed")
+
                 // ...
             }
         }
@@ -134,6 +142,6 @@ class SaveReminderFragment : BaseFragment() {
 
     companion object {
         internal const val ACTION_GEOFENCE_EVENT =
-            "SaveReminderFragment.action.ACTION_GEOFENCE_EVENT"
+            "com.udacity.project4.locationreminders.savereminder.SaveReminderFragment.action.ACTION_GEOFENCE_EVENT"
     }
 }

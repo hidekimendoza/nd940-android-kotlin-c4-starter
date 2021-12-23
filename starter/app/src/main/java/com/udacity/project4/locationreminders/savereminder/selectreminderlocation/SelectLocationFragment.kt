@@ -128,7 +128,7 @@ class SelectLocationFragment : BaseFragment() {
         map = googleMap
         setMapStyle(map)
         map.isMyLocationEnabled = true
-        setMapLongClick(map)
+        // setMapLongClick(map)
         setPoiClick(map)
         getDeviceLocation()
     }
@@ -186,18 +186,18 @@ class SelectLocationFragment : BaseFragment() {
         }
     }
 
-    private fun setMapLongClick(map: GoogleMap) {
-        map.setOnMapLongClickListener { latLng ->
-            selectedLocation = latLng
-            selectedPoi = null
-            map.clear()
-            map.addMarker(
-                MarkerOptions()
-                    .position(selectedLocation!!)
-            )
-            Log.i("TAG", "Marker added at location: $latLng")
-        }
-    }
+//    private fun setMapLongClick(map: GoogleMap) {
+//        map.setOnMapLongClickListener { latLng ->
+//            selectedLocation = latLng
+//            selectedPoi = null
+//            map.clear()
+//            map.addMarker(
+//                MarkerOptions()
+//                    .position(selectedLocation!!)
+//            )
+//            Log.i("TAG", "Marker added at location: $latLng")
+//        }
+//    }
 
     private fun setMapStyle(map: GoogleMap) {
         try {

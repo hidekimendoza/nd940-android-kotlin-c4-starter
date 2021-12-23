@@ -1,10 +1,12 @@
 package com.udacity.project4.utils
 
 import android.view.View
+import android.widget.TextView
 import androidx.databinding.BindingAdapter
 import androidx.lifecycle.LiveData
 import androidx.recyclerview.widget.RecyclerView
 import com.udacity.project4.base.BaseRecyclerViewAdapter
+import com.udacity.project4.locationreminders.reminderslist.ReminderDataItem
 
 
 object BindingAdapters {
@@ -43,5 +45,16 @@ object BindingAdapters {
                     view.fadeOut()
             }
         }
+    }
+
+    @BindingAdapter("android:text")
+    @JvmStatic
+    fun formatReminderDescription(textView: TextView, reminder: ReminderDataItem) {
+        val formattedString: CharSequence = """
+        ${reminder.title}:
+        
+        ${reminder.description}
+    """.trimIndent()
+        textView.text = formattedString
     }
 }

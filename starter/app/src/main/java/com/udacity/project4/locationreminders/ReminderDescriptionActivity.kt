@@ -3,6 +3,7 @@ package com.udacity.project4.locationreminders
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import com.udacity.project4.R
@@ -32,6 +33,10 @@ class ReminderDescriptionActivity : AppCompatActivity() {
             this,
             R.layout.activity_reminder_description
         )
-//        TODO: Add the implementation of the reminder details
+
+        Log.d("ReminderDescriptionAct", "Detail activity launched")
+        //        TODO: Add the implementation of the reminder details
+        binding.reminderDataItem =
+            intent.getSerializableExtra(EXTRA_ReminderDataItem) as ReminderDataItem
     }
 }
