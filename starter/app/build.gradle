@@ -126,6 +126,7 @@ dependencies {
 
     // Firebase authentication
     implementation 'com.firebaseui:firebase-ui-auth:7.2.0'
+    androidTestImplementation 'com.firebaseui:firebase-ui-auth:7.2.0'
 
     //Maps & Geofencing
     implementation "com.google.android.gms:play-services-location:$playServicesVersion"

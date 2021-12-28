@@ -31,8 +31,6 @@ import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import com.udacity.project4.utils.setTitle
 import com.udacity.project4.utils.setup
 import org.koin.androidx.viewmodel.ext.android.viewModel
-
-private const val REQUEST_LOCATION_PERMISSION = 1
 private const val REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE = 33
 private const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
 private const val REQUEST_TURN_DEVICE_LOCATION_ON = 29
