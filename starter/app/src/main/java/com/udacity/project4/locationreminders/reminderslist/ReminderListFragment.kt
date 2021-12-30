@@ -62,7 +62,7 @@ class ReminderListFragment : BaseFragment() {
         setDisplayHomeAsUpEnabled(false)
         setTitle(getString(R.string.app_name))
         binding.refreshLayout.setOnRefreshListener { _viewModel.loadReminders() }
-        observeAuthenticationState()
+//        observeAuthenticationState()
         enableMyLocation()
 
         return binding.root
@@ -129,23 +129,23 @@ class ReminderListFragment : BaseFragment() {
         startActivity(intent)
     }
 
-    private fun observeAuthenticationState() {
-
-        authViewModel.authenticationState.observe(
-            viewLifecycleOwner,
-            Observer { authenticationState ->
-                if (authenticationState != AuthenticationViewModel.AuthenticationState.AUTHENTICATED) {
-                    Log.i(
-                        TAG,
-                        "Authentication missing, moving to authentication view"
-                    )
-                    launchAuthenticationActivity()
-                } else {
-                    Log.i(TAG, "Authentication already done, skipping login ...")
-                }
-
-            })
-    }
+//    private fun observeAuthenticationState() {
+//
+//        authViewModel.authenticationState.observe(
+//            viewLifecycleOwner,
+//            Observer { authenticationState ->
+//                if (authenticationState != AuthenticationViewModel.AuthenticationState.AUTHENTICATED) {
+//                    Log.i(
+//                        TAG,
+//                        "Authentication missing, moving to authentication view"
+//                    )
+//                    launchAuthenticationActivity()
+//                } else {
+//                    Log.i(TAG, "Authentication already done, skipping login ...")
+//                }
+//
+//            })
+//    }
 
     @TargetApi(29)
     private fun isPermissionGranted(): Boolean {

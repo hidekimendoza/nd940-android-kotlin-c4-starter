@@ -10,6 +10,7 @@ import androidx.navigation.Navigation
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.IdlingRegistry
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.BoundedMatcher
@@ -22,10 +23,13 @@ import com.udacity.project4.locationreminders.data.dto.ReminderDTO
 import com.udacity.project4.locationreminders.data.local.LocalDB
 import com.udacity.project4.locationreminders.data.local.RemindersLocalRepository
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
+import com.udacity.project4.util.DataBindingIdlingResource
+import com.udacity.project4.util.monitorFragment
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.Description
 import org.hamcrest.Matcher
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,8 +50,22 @@ import org.mockito.Mockito.verify
 @MediumTest
 class ReminderListFragmentTest : AutoCloseKoinTest() {
 
+    private val dataBindingIdlingResource = DataBindingIdlingResource()
     private lateinit var repository: ReminderDataSource
     private lateinit var appContext: Application
+
+
+    @Before
+    fun registerIdlingResource() {
+        // IdlingRegistry.getInstance().register(EspressoIdlingResource.countingIdlingResource)
+        IdlingRegistry.getInstance().register(dataBindingIdlingResource)
+    }
+
+    @After
+    fun unregisterIdlingResource() {
+        // IdlingRegistry.getInstance().unregister(EspressoIdlingResource.countingIdlingResource)
+        IdlingRegistry.getInstance().unregister(dataBindingIdlingResource)
+    }
 
     @Before
     fun setup() {
@@ -66,21 +84,22 @@ class ReminderListFragmentTest : AutoCloseKoinTest() {
             single {
                 //This view model is declared singleton to be used across multiple fragments
                 SaveReminderViewModel(
-                    get(),
+                    appContext,
                     get() as ReminderDataSource
                 )
             }
-            single { RemindersLocalRepository(get()) }
+            single { RemindersLocalRepository(get()) as ReminderDataSource}
             single { LocalDB.createRemindersDao(appContext) }
         }
 
         startKoin {
             androidContext(appContext)
             modules(listOf(myModule))
-            repository = get()
-            runBlocking { repository.deleteAllReminders() }
-
         }
+        repository = get()
+        runBlocking { repository.deleteAllReminders() }
+
+
     }
 
     @Test
@@ -88,10 +107,12 @@ class ReminderListFragmentTest : AutoCloseKoinTest() {
         // GIVEN the Reminder List Fragment
         val navController = mock(NavController::class.java)
         val scenario = launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
-
+        dataBindingIdlingResource.monitorFragment(scenario)
         scenario.onFragment {
             Navigation.setViewNavController(it.view!!, navController)
         }
+        Thread.sleep(5000)
+
 
         // WHEN pressing addReminder FAB
         onView(withId(R.id.addReminderFAB)).perform(click())
@@ -102,7 +123,8 @@ class ReminderListFragmentTest : AutoCloseKoinTest() {
 
     @Test
     fun reminderListFragment_withEmptyListOfReminders_shouldDisplayIcon() {
-        launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
+        val scenario = launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
+        dataBindingIdlingResource.monitorFragment(scenario)
         onView(withId(R.id.noDataTextView)).check(matches(isDisplayed()))
 
     }
@@ -117,8 +139,8 @@ class ReminderListFragmentTest : AutoCloseKoinTest() {
                 ReminderDTO("Title2", "Description2", "Location2", 200.0, 200.0, "002")
             )
         }
-        launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
-
+        val scenario = launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
+        dataBindingIdlingResource.monitorFragment(scenario)
         onView(withId(R.id.reminderssRecyclerView))
             .check(matches(atPosition(0, withText("Title1"), R.id.title)))
         onView(withId(R.id.reminderssRecyclerView))
@@ -133,6 +155,14 @@ class ReminderListFragmentTest : AutoCloseKoinTest() {
         onView(withId(R.id.reminderssRecyclerView))
             .check(matches(atPosition(1, withText("Location2"), R.id.location)))
 
+    }
+
+    @Test
+    fun reminderListFragment_NoData() {
+        val scenario = launchFragmentInContainer<ReminderListFragment>(Bundle(), R.style.AppTheme)
+        dataBindingIdlingResource.monitorFragment(scenario)
+
+        onView(withId(R.id.noDataTextView)).check(matches(isDisplayed()))
     }
 
 }
