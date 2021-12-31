@@ -57,17 +57,10 @@ class SelectLocationFragment : BaseFragment() {
         fusedLocationProviderClient =
             LocationServices.getFusedLocationProviderClient(requireActivity())
 
-//        TODO: add the map setup implementation
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
         mapFragment?.getMapAsync(callback)
 
 
-//        TODO: zoom to the user location after taking his permission
-//        TODO: add style to the map
-//        TODO: put a marker to location that the user selected
-
-
-//        TODO: call this function after the user confirms on the selected location
         binding.buttonSaveLocation.setOnClickListener {
             onLocationSelected()
         }
@@ -75,9 +68,6 @@ class SelectLocationFragment : BaseFragment() {
     }
 
     private fun onLocationSelected() {
-        //        TODO: When the user confirms on the selected location,
-        //         send back the selected location details to the view model
-        //         and navigate back to the previous fragment to save the reminder and add the geofence
         _viewModel.selectedPOI.value = selectedPoi
         _viewModel.latitude.value = selectedLocation?.latitude
         _viewModel.longitude.value = selectedLocation?.longitude
@@ -128,7 +118,7 @@ class SelectLocationFragment : BaseFragment() {
         map = googleMap
         setMapStyle(map)
         map.isMyLocationEnabled = true
-        // setMapLongClick(map)
+        setMapLongClick(map)
         setPoiClick(map)
         getDeviceLocation()
     }
@@ -186,18 +176,18 @@ class SelectLocationFragment : BaseFragment() {
         }
     }
 
-//    private fun setMapLongClick(map: GoogleMap) {
-//        map.setOnMapLongClickListener { latLng ->
-//            selectedLocation = latLng
-//            selectedPoi = null
-//            map.clear()
-//            map.addMarker(
-//                MarkerOptions()
-//                    .position(selectedLocation!!)
-//            )
-//            Log.i("TAG", "Marker added at location: $latLng")
-//        }
-//    }
+    private fun setMapLongClick(map: GoogleMap) {
+        map.setOnMapLongClickListener { latLng ->
+            selectedLocation = latLng
+            selectedPoi = PointOfInterest(latLng, "User defined", "User defined")
+            map.clear()
+            map.addMarker(
+                MarkerOptions()
+                    .position(selectedLocation!!)
+            )
+            Log.i("TAG", "Marker added at location: $latLng")
+        }
+    }
 
     private fun setMapStyle(map: GoogleMap) {
         try {
