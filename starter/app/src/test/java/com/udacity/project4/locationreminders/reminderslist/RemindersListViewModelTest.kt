@@ -2,10 +2,11 @@ package com.udacity.project4.locationreminders.reminderslist
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.udacity.project4.locationreminders.MainCoroutineRule
 import com.udacity.project4.locationreminders.data.FakeDataSource
 import com.udacity.project4.locationreminders.data.ReminderDataSource
 import com.udacity.project4.locationreminders.data.dto.ReminderDTO
+import com.udacity.project4.locationreminders.util.MainCoroutineRule
+import getOrAwaitValue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.hamcrest.CoreMatchers.`is`
@@ -38,7 +39,6 @@ class RemindersListViewModelTest : AutoCloseKoinTest() {
     }
 
 
-    //TODO: provide testing to the RemindersListViewModel and its live data objects
     @Test
     fun loadReminders_withEmptyList_shouldSetShowNoData() = mainCoroutineRule.runBlockingTest {
 
@@ -46,16 +46,13 @@ class RemindersListViewModelTest : AutoCloseKoinTest() {
         dataSource.deleteAllReminders()
         // When loadReminders is called
         viewModel.loadReminders()
-        // Then reminder list should be empty and showNoData flag true
-        assertThat(viewModel.showNoData.value, `is`(true))
+        val reminderList = viewModel.remindersList.getOrAwaitValue()
+        val showNoData = viewModel.showNoData.getOrAwaitValue()
+        assertThat(showNoData, `is`(true))
         assertThat(
-            viewModel.remindersList.value?.isEmpty(),
+            reminderList.isEmpty(),
             `is`(true)
         )
-//        assertThat(
-//            viewModel.showLoading.value,
-//            `is`(false)
-//        )
     }
 
     @Test
@@ -68,11 +65,27 @@ class RemindersListViewModelTest : AutoCloseKoinTest() {
             dataSource.saveReminder(r2)
             // WHEN loadReminders is called
             viewModel.loadReminders()
+            val reminderList = viewModel.remindersList.getOrAwaitValue()
+            val showNoData = viewModel.showNoData.getOrAwaitValue()
             // Reminder list should be updated with the reminders
-            assertThat(viewModel.showNoData.value, `is`(false))
+            assertThat(showNoData, `is`(false))
             // assertThat(viewModel.s)
-            assertThat(viewModel.remindersList.value?.get(0)?.id, `is`(r1.id))
-            assertThat(viewModel.remindersList.value?.get(1)?.id, `is`(r2.id))
+            assertThat(reminderList[0].id, `is`(r1.id))
+            assertThat(reminderList[1].id, `is`(r2.id))
+
+        }
+
+    @Test
+    fun loadReminder_withErrorGettingReminders_ShouldSnackBarErrorMessage() =
+        mainCoroutineRule.runBlockingTest {
+            // Given a datasource with errors
+            (dataSource as FakeDataSource).sendError = true
+
+            //WHEN load reminders is called
+            viewModel.loadReminders()
+            val showSnackBar = viewModel.showSnackBar.getOrAwaitValue()
+            assertThat(showSnackBar, `is`("Error getting reminder"))
+
 
         }
 }

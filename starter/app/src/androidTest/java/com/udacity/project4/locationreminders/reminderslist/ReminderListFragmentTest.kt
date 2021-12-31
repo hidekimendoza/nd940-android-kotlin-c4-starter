@@ -88,7 +88,7 @@ class ReminderListFragmentTest : AutoCloseKoinTest() {
                     get() as ReminderDataSource
                 )
             }
-            single { RemindersLocalRepository(get()) as ReminderDataSource}
+            single { RemindersLocalRepository(get()) as ReminderDataSource }
             single { LocalDB.createRemindersDao(appContext) }
         }
 
@@ -111,8 +111,6 @@ class ReminderListFragmentTest : AutoCloseKoinTest() {
         scenario.onFragment {
             Navigation.setViewNavController(it.view!!, navController)
         }
-        Thread.sleep(5000)
-
 
         // WHEN pressing addReminder FAB
         onView(withId(R.id.addReminderFAB)).perform(click())
