@@ -1,12 +1,17 @@
 package com.udacity.project4.locationreminders.savereminder.selectreminderlocation
 
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.location.Location
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -38,6 +43,32 @@ class SelectLocationFragment : BaseFragment() {
     private var lastKnownLocation: Location? = null
     private var selectedLocation: LatLng? = null
     private var selectedPoi: PointOfInterest? = null
+    private var permissionDenied = true
+
+    @SuppressLint("MissingPermission")
+    val requestPermissionLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                // Permission is granted. Continue the action or workflow in your
+                // app.
+                permissionDenied = false
+                getDeviceLocation()
+            } else {
+                // Explain to the user that the feature is unavailable because the
+                // features requires a permission that the user has denied. At the
+                // same time, respect the user's decision. Don't link to system
+                // settings in an effort to convince the user to change their
+                // decision.
+                Toast.makeText(
+                    requireContext(),
+                    R.string.permission_denied_explanation,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
 
     //Use Koin to get the view model of the SaveReminder
     override val _viewModel: SaveReminderViewModel by inject()
@@ -59,8 +90,6 @@ class SelectLocationFragment : BaseFragment() {
 
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
         mapFragment?.getMapAsync(callback)
-
-
         binding.buttonSaveLocation.setOnClickListener {
             onLocationSelected()
         }
@@ -83,7 +112,6 @@ class SelectLocationFragment : BaseFragment() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
-        // TODO: Change the map type based on the user's selection.
         R.id.normal_map -> {
             map.mapType = GoogleMap.MAP_TYPE_NORMAL
             true
@@ -117,7 +145,6 @@ class SelectLocationFragment : BaseFragment() {
         Log.i("OnMapReadyCallback", "Map is available")
         map = googleMap
         setMapStyle(map)
-        map.isMyLocationEnabled = true
         setMapLongClick(map)
         setPoiClick(map)
         getDeviceLocation()
@@ -130,31 +157,44 @@ class SelectLocationFragment : BaseFragment() {
          * cases when a location is not available.
          */
         try {
-            val locationResult = fusedLocationProviderClient.lastLocation
-            locationResult.addOnCompleteListener(requireActivity()) { task ->
-                if (task.isSuccessful) {
-                    // Set the map's camera position to the current location of the device.
-                    lastKnownLocation = task.result
-                    if (lastKnownLocation != null) {
-                        map.moveCamera(
-                            CameraUpdateFactory.newLatLngZoom(
-                                LatLng(
-                                    lastKnownLocation!!.latitude,
-                                    lastKnownLocation!!.longitude
-                                ), DEFAULT_ZOOM.toFloat()
+            enableMyLocation()
+            map.isMyLocationEnabled = !permissionDenied
+            if (!permissionDenied) {
+                map.isMyLocationEnabled = !permissionDenied
+                map.uiSettings.isMyLocationButtonEnabled = !permissionDenied
+                val locationResult = fusedLocationProviderClient.lastLocation
+                locationResult.addOnCompleteListener(requireActivity()) { task ->
+                    if (task.isSuccessful) {
+                        // Set the map's camera position to the current location of the device.
+                        lastKnownLocation = task.result
+                        if (lastKnownLocation != null) {
+                            map.moveCamera(
+                                CameraUpdateFactory.newLatLngZoom(
+                                    LatLng(
+                                        lastKnownLocation!!.latitude,
+                                        lastKnownLocation!!.longitude
+                                    ), DEFAULT_ZOOM
+                                )
                             )
+                        }
+                    } else {
+                        Log.d("TAG", "Current location is null. Using defaults.")
+                        Log.e("TAG", "Exception: %s", task.exception)
+                        map.moveCamera(
+                            CameraUpdateFactory
+                                .newLatLngZoom(DEFAULT_LOCATION, DEFAULT_ZOOM)
                         )
+                        map.uiSettings.isMyLocationButtonEnabled = false
                     }
-                } else {
-                    Log.d("TAG", "Current location is null. Using defaults.")
-                    Log.e("TAG", "Exception: %s", task.exception)
-                    map.moveCamera(
-                        CameraUpdateFactory
-                            .newLatLngZoom(DEFAULT_LOCATION, DEFAULT_ZOOM.toFloat())
-                    )
-                    map.uiSettings.isMyLocationButtonEnabled = false
                 }
+            } else {
+                Toast.makeText(
+                    requireContext(),
+                    R.string.permission_denied_explanation,
+                    Toast.LENGTH_SHORT
+                ).show()
             }
+
         } catch (e: SecurityException) {
             Log.e("Exception: %s", e.message, e)
         }
@@ -208,4 +248,36 @@ class SelectLocationFragment : BaseFragment() {
         }
     }
 
+    /**
+     * Enables the My Location layer if the fine location permission has been granted.
+     */
+    @SuppressLint("MissingPermission")
+    private fun enableMyLocation() {
+
+        when {
+            ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                permissionDenied = false
+                // You can use the API that requires the permission.
+            }
+            shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) -> {
+                // In an educational UI, explain to the user why your app requires this
+                // permission for a specific feature to behave as expected. In this UI,
+                // include a "cancel" or "no thanks" button that allows the user to
+                // continue using your app without granting the permission.
+                permissionDenied = false
+                Log.i("enableMyLocation", "Fine location access requested")
+
+            }
+            else -> {
+                // You can directly ask for the permission.
+                // The registered ActivityResultCallback gets the result of this request.
+                requestPermissionLauncher.launch(
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+            }
+        }
+    }
 }
