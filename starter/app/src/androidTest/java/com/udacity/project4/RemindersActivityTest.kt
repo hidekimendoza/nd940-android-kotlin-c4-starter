@@ -19,7 +19,6 @@ import com.udacity.project4.locationreminders.data.local.RemindersLocalRepositor
 import com.udacity.project4.locationreminders.reminderslist.RemindersListViewModel
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.util.DataBindingIdlingResource
-import com.udacity.project4.util.ToastMatcher
 import com.udacity.project4.util.monitorActivity
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -32,6 +31,14 @@ import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import org.koin.test.AutoCloseKoinTest
 import org.koin.test.get
+import androidx.test.espresso.matcher.RootMatchers.withDecorView
+
+import org.hamcrest.CoreMatchers.not
+import org.junit.Rule
+
+import androidx.test.rule.ActivityTestRule
+import org.hamcrest.core.Is.`is`
+
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
@@ -47,6 +54,8 @@ class RemindersActivityTest :
      * As we use Koin as a Service Locator Library to develop our code, we'll also use Koin to test our code.
      * at this step we will initialize Koin related code to be able to use it in out testing.
      */
+
+
     @Before
     fun init() {
         stopKoin()//stop the original app koin
@@ -111,11 +120,36 @@ fun addReminder_withoutPOI() = runBlocking {
     onView(withId(R.id.button_save_location)).perform(click())
     onView(withId(R.id.saveReminder)).perform(click())
 
+    // onView(withText(R.string.TOAST_STRING)).inRoot(withDecorView(not(is(getActivity().getWindow().getDecorView())))).check(matches(isDisplayed()));
+
     // Then no reminder is added
     Espresso.pressBack()
     onView(withId(R.id.noDataTextView)).check(matches(isDisplayed()))
 
     activityScenario.close()
 }
+
+    @Test
+    fun addReminder_withoutTitle_shouldDisplaySnackbarWithError() = runBlocking {
+        val activityScenario = ActivityScenario.launch(RemindersActivity::class.java)
+        dataBindingIdlingResource.monitorActivity(activityScenario)
+        // Given an empty list of reminders
+        onView(withId(R.id.addReminderFAB)).perform(click())
+
+        // When reminder with missing Title is tried to be added
+        onView(withId(R.id.reminderDescription)).perform(replaceText("Reminder description"))
+        onView(withId(R.id.selectLocation)).perform(click())
+
+        onView(withId(R.id.button_save_location)).perform(click())
+        onView(withId(R.id.saveReminder)).perform(click())
+
+        // Snack bar showing missing title is displayed
+        onView(withId(com.google.android.material.R.id.snackbar_text))
+            .check(matches(withText(R.string.err_enter_title)))
+
+        activityScenario.close()
+    }
+
+//
 
 }

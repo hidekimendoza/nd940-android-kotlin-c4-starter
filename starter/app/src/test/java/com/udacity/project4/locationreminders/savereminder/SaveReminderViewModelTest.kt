@@ -74,7 +74,7 @@ class SaveReminderViewModelTest {
     }
 
     @Test
-    fun validateAndSaveReminder_invalidData_ShoulShowErrorMessageAndNotUpdateDB() =
+    fun validateAndSaveReminder_invalidData_ShouldShowErrorMessageAndNotUpdateDB() =
         mainCoroutineRule.runBlockingTest {
             // GIVEN an invalid reminder and an empty DB
             dataSource.deleteAllReminders()
@@ -104,11 +104,9 @@ class SaveReminderViewModelTest {
 
         viewModel.validateAndSaveReminder(validReminder)
 
-        val loading = viewModel.showLoading.getOrAwaitValue()
         val toast = viewModel.showToast.getOrAwaitValue()
         val nav = viewModel.navigationCommand.getOrAwaitValue()
 
-        MatcherAssert.assertThat(loading, `is`(false))
         MatcherAssert.assertThat(toast, `is`("Reminder Saved !"))
         MatcherAssert.assertThat(nav, `is`(NavigationCommand.Back))
 
@@ -123,7 +121,18 @@ class SaveReminderViewModelTest {
         MatcherAssert.assertThat(obtainedReminder.data[0].location, `is`(validReminder.location))
         MatcherAssert.assertThat(obtainedReminder.data[0].latitude, `is`(validReminder.latitude))
         MatcherAssert.assertThat(obtainedReminder.data[0].longitude, `is`(validReminder.longitude))
+    }
 
+    @Test
+    fun saveReminder_addReminder_loadingShouldChangeBasedOnStatus() {
+        val validReminder =
+            ReminderDataItem("title1", "description1", "location1", 100.0, 200.0, "001")
+
+        mainCoroutineRule.pauseDispatcher()
+        viewModel.saveReminder(validReminder)
+        MatcherAssert.assertThat(viewModel.showLoading.getOrAwaitValue(), `is`(true))
+        mainCoroutineRule.resumeDispatcher()
+        MatcherAssert.assertThat(viewModel.showLoading.getOrAwaitValue(), `is`(false))
 
     }
 
