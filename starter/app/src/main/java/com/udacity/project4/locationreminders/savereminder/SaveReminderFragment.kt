@@ -193,6 +193,7 @@ class SaveReminderFragment : BaseFragment() {
         grantResults: IntArray
     ) {
         Log.d(TAG, "onRequestPermissionResult")
+        grantResults.size
 
         if (
             grantResults.isEmpty() ||

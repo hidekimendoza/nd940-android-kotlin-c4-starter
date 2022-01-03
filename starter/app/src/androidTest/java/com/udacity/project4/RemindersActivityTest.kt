@@ -1,13 +1,13 @@
 package com.udacity.project4
 
 import android.app.Application
+import android.util.Log
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.espresso.Espresso
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.IdlingRegistry
-import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.action.ViewActions.replaceText
+import androidx.test.espresso.action.ViewActions.*
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -37,8 +37,13 @@ import org.hamcrest.CoreMatchers.not
 import org.junit.Rule
 
 import androidx.test.rule.ActivityTestRule
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.PointOfInterest
 import com.udacity.project4.util.ToastMatcher
+import com.udacity.project4.util.ToastMatcher.Companion.onToast
 import com.udacity.project4.utils.EspressoIdlingResource
+import kotlinx.coroutines.test.runBlockingTest
 import org.hamcrest.core.Is.`is`
 
 
@@ -155,7 +160,7 @@ fun addReminder_withoutPOI() = runBlocking {
     }
 
     @Test
-    fun addReminder_withValidReminder_shouldDisplaySuccessToast() {
+    fun addReminder_withValidReminder_shouldDisplaySuccessToast() = runBlocking {
         val activityScenario = ActivityScenario.launch(RemindersActivity::class.java)
         dataBindingIdlingResource.monitorActivity(activityScenario)
 
@@ -167,29 +172,30 @@ fun addReminder_withoutPOI() = runBlocking {
         onView(withId(R.id.reminderDescription)).perform(replaceText("Reminder description"))
         onView(withId(R.id.selectLocation)).perform(click())
 
-        onView(withId(R.id.map)).perform(click())
+        onView(withId(R.id.map)).perform(longClick())
 
         onView(withId(R.id.button_save_location)).perform(click())
-        onView(withId(R.id.saveReminder)).perform(click())
+         onView(withId(R.id.saveReminder)).perform(click())
 
+        onToast(R.string.reminder_saved).check(matches(isDisplayed()))
 //        onView(withText(R.string.reminder_saved)).inRoot(ToastMatcher())
 //            .check(matches(isDisplayed()))
 
-        activityScenario.onActivity {
-            onView(withText(R.string.reminder_saved)).inRoot(
-                withDecorView(
-                    not(
-                        `is`(
-                            it!!.window.decorView
-                        )
-                    )
-                )
-            ).check(
-                matches(
-                    isDisplayed()
-                )
-            )
-        }
+//        activityScenario.onActivity {
+//            onView(withText(R.string.reminder_saved)).inRoot(
+//                withDecorView(
+//                    not(
+//                        `is`(
+//                            it!!.window.decorView
+//                        )
+//                    )
+//                )
+//            ).check(
+//                matches(
+//                    isDisplayed()
+//                )
+//            )
+//        }
 
         activityScenario.close()
     }
