@@ -198,9 +198,7 @@ class SaveReminderFragment : BaseFragment() {
         if (
             grantResults.isEmpty() ||
             grantResults[LOCATION_PERMISSION_INDEX] == PackageManager.PERMISSION_DENIED ||
-            (requestCode == REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE &&
-                    grantResults[BACKGROUND_LOCATION_PERMISSION_INDEX] ==
-                    PackageManager.PERMISSION_DENIED)
+            (isPermissionDeniedFgBg(requestCode, grantResults))
         ) {
             Snackbar.make(
                 requireView(),
@@ -217,6 +215,19 @@ class SaveReminderFragment : BaseFragment() {
         else{
             checkDeviceLocationSettingsAndStoreGeofence()
         }
+    }
+
+    private fun isPermissionDeniedFgBg(
+        requestCode: Int,
+        grantResults: IntArray
+    ) : Boolean{
+        if (requestCode == REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE){
+            if(grantResults.size > 1 && grantResults[BACKGROUND_LOCATION_PERMISSION_INDEX] ==
+                PackageManager.PERMISSION_DENIED){
+                return true
+            }
+        }
+        return false
     }
 
     private fun checkDeviceLocationSettingsAndStoreGeofence(resolve: Boolean = true) {
