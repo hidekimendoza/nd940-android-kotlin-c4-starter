@@ -102,12 +102,18 @@ class SaveReminderViewModelTest {
         val validReminder =
             ReminderDataItem("title1", "description1", "location1", 100.0, 200.0, "001")
 
+        mainCoroutineRule.pauseDispatcher()
         viewModel.validateAndSaveReminder(validReminder)
+        MatcherAssert.assertThat(viewModel.showLoading.getOrAwaitValue(), `is`(true))
+        mainCoroutineRule.resumeDispatcher()
+        MatcherAssert.assertThat(viewModel.showLoading.getOrAwaitValue(), `is`(false))
+
 
         val toast = viewModel.showToast.getOrAwaitValue()
         val nav = viewModel.navigationCommand.getOrAwaitValue()
 
         MatcherAssert.assertThat(toast, `is`("Reminder Saved !"))
+
         MatcherAssert.assertThat(nav, `is`(NavigationCommand.Back))
 
         val obtainedReminder = dataSource.getReminders() as Result.Success<List<ReminderDTO>>

@@ -37,6 +37,8 @@ import org.hamcrest.CoreMatchers.not
 import org.junit.Rule
 
 import androidx.test.rule.ActivityTestRule
+import com.udacity.project4.util.ToastMatcher
+import com.udacity.project4.utils.EspressoIdlingResource
 import org.hamcrest.core.Is.`is`
 
 
@@ -91,6 +93,7 @@ class RemindersActivityTest :
 
     @Before
     fun registerIdlingResource() {
+        IdlingRegistry.getInstance().register(EspressoIdlingResource.countingIdlingResource)
         IdlingRegistry.getInstance().register(dataBindingIdlingResource)
     }
 
@@ -99,6 +102,7 @@ class RemindersActivityTest :
      */
     @After
     fun unregisterIdlingResource() {
+        IdlingRegistry.getInstance().unregister(EspressoIdlingResource.countingIdlingResource)
         IdlingRegistry.getInstance().unregister(dataBindingIdlingResource)
     }
 
@@ -150,6 +154,44 @@ fun addReminder_withoutPOI() = runBlocking {
         activityScenario.close()
     }
 
-//
+    @Test
+    fun addReminder_withValidReminder_shouldDisplaySuccessToast() {
+        val activityScenario = ActivityScenario.launch(RemindersActivity::class.java)
+        dataBindingIdlingResource.monitorActivity(activityScenario)
+
+        // Given an empty list of reminders
+        onView(withId(R.id.addReminderFAB)).perform(click())
+
+        // When invalid reminder is try to be added
+        onView(withId(R.id.reminderTitle)).perform(replaceText("Reminder title"))
+        onView(withId(R.id.reminderDescription)).perform(replaceText("Reminder description"))
+        onView(withId(R.id.selectLocation)).perform(click())
+
+        onView(withId(R.id.map)).perform(click())
+
+        onView(withId(R.id.button_save_location)).perform(click())
+        onView(withId(R.id.saveReminder)).perform(click())
+
+//        onView(withText(R.string.reminder_saved)).inRoot(ToastMatcher())
+//            .check(matches(isDisplayed()))
+
+        activityScenario.onActivity {
+            onView(withText(R.string.reminder_saved)).inRoot(
+                withDecorView(
+                    not(
+                        `is`(
+                            it!!.window.decorView
+                        )
+                    )
+                )
+            ).check(
+                matches(
+                    isDisplayed()
+                )
+            )
+        }
+
+        activityScenario.close()
+    }
 
 }

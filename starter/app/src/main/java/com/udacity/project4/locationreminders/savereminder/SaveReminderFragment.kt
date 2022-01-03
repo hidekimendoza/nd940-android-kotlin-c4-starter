@@ -7,7 +7,9 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -17,6 +19,7 @@ import androidx.databinding.DataBindingUtil
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.material.snackbar.Snackbar
+import com.udacity.project4.BuildConfig
 import com.udacity.project4.R
 import com.udacity.project4.base.BaseFragment
 import com.udacity.project4.base.NavigationCommand
@@ -58,7 +61,6 @@ class SaveReminderFragment : BaseFragment() {
         setDisplayHomeAsUpEnabled(true)
         binding.viewModel = _viewModel
         geofencingClient = LocationServices.getGeofencingClient(requireActivity())
-        enableGeofencePermissions()
 
         return binding.root
     }
@@ -73,17 +75,14 @@ class SaveReminderFragment : BaseFragment() {
         }
 
         binding.saveReminder.setOnClickListener {
-
+            enableGeofencePermissions()
             val permissionGranted = isPermissionGranted()
             if (permissionGranted) {
                 //             1) add a geofencing request
                 //             2) save the reminder to the local db
                 checkDeviceLocationSettingsAndStoreGeofence()
             } else {
-                Snackbar.make(
-                    requireView(),
-                    R.string.permission_select_denied_explanation, Snackbar.LENGTH_INDEFINITE
-                ).show()
+                Log.i("saveReminder", "Save reminder permission missing")
             }
         }
     }
@@ -206,14 +205,16 @@ class SaveReminderFragment : BaseFragment() {
                 requireView(),
                 R.string.permission_denied_explanation,
                 Snackbar.LENGTH_LONG
-            ).show()
-//                .setAction(R.string.settings) {
-//                    startActivity(Intent().apply {
-//                        action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-//                        data = Uri.fromParts("package", BuildConfig.APPLICATION_ID, null)
-//                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-//                    })
-//                }.show()
+            ).setAction(R.string.settings) {
+                    startActivity(Intent().apply {
+                        action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                        data = Uri.fromParts("package", BuildConfig.APPLICATION_ID, null)
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    })
+                }.show()
+        }
+        else{
+            checkDeviceLocationSettingsAndStoreGeofence()
         }
     }
 
@@ -234,17 +235,21 @@ class SaveReminderFragment : BaseFragment() {
                 try {
                     // Show the dialog by calling startResolutionForResult(),
                     // and check the result in onActivityResult().
-                    exception.startResolutionForResult(
-                        requireActivity(),
-                        REQUEST_TURN_DEVICE_LOCATION_ON
-                    )
+                      startIntentSenderForResult(
+                                exception.resolution.intentSender,
+                                REQUEST_TURN_DEVICE_LOCATION_ON,
+                                null,
+                                 0,
+                                0,
+                                 0,
+                                null)
                 } catch (sendEx: IntentSender.SendIntentException) {
                     Log.d(TAG, "Error geting location settings resolution: " + sendEx.message)
                 }
             } else {
                 Snackbar.make(
                     binding.saveReminderContainer,
-                    R.string.location_required_error, Snackbar.LENGTH_INDEFINITE
+                    R.string.location_required_error, Snackbar.LENGTH_LONG
                 ).setAction(android.R.string.ok) {
                     checkDeviceLocationSettingsAndStoreGeofence()
                 }.show()
@@ -262,6 +267,14 @@ class SaveReminderFragment : BaseFragment() {
                 addReminderGeofence(reminderData.id)
                 _viewModel.validateAndSaveReminder(reminderData)
             }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_TURN_DEVICE_LOCATION_ON) {
+            Log.i("onActivityResult", "onActivityResult Triggered!")
+            checkDeviceLocationSettingsAndStoreGeofence(false)
         }
     }
 

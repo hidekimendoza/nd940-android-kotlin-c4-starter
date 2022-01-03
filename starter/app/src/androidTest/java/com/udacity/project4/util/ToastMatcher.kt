@@ -2,9 +2,14 @@ package com.udacity.project4.util
 
 import android.os.IBinder
 import android.view.WindowManager
+import androidx.test.espresso.Espresso
 import androidx.test.espresso.Root
 import org.hamcrest.Description
 import org.hamcrest.TypeSafeMatcher
+import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
+
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.matcher.ViewMatchers
 
 
 class ToastMatcher: TypeSafeMatcher<Root>() {
